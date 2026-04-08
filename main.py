@@ -10,11 +10,11 @@ from load_model import load_model
 MODEL_NAME = "google/gemma-2-2b-it"
 SAE_RELEASE = "gemma-scope-2b-pt-res-canonical"
 SAE_ID = "layer_12/width_16k/canonical"
-DEVICE = "cpu"
+DEVICE = "cuda"
 
 sae_model, sae = load_model(MODEL_NAME, SAE_RELEASE, SAE_ID, DEVICE) #Load the model and the SAE
 #%%
-
+``
 #%% Cell 2 - Chat loop (~ )
 from chat_functions import chat_loop
 NUM_TOKENS=256

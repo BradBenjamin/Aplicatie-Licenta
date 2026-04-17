@@ -1,5 +1,9 @@
 #LLM Functions & constants
+from urllib import response
+from functools import partial
 from sae_functions import analyze_query_activations
+
+
 def format(role, prompt):
   good_format = {"role": role, "content": prompt}
   return good_format
@@ -27,8 +31,9 @@ def generate_normal_response(model, tokenizer,messages, num_tokens, temp):
   ]
   response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
   return response
-def generate_sae_response(model, tokenizer,messages, num_tokens, temp):
+def generate_sae_response(model,messages, num_tokens, temp):
   print("Generating response...\n")
+  tokenizer = model.tokenizer
   text = tokenizer.apply_chat_template(
         messages,
         tokenize=False,
@@ -61,6 +66,7 @@ def chat_loop(model, tokenizer, SYSTEM_PROMPT, num_tokens, temp, is_sae, sae, to
     response = generate_sae_response(model, tokenizer, history, num_tokens, temp) if (is_sae) else generate_normal_response(model, tokenizer, history, num_tokens, temp)
     print("LLM: ", response)
     history.append(format("assistant",response))
+
 
 
 

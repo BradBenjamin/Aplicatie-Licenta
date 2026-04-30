@@ -52,9 +52,8 @@ def analyze_query_activations_html(model, sae, query, top_k=1):
 def sae_dashboard_analysis(model, sae, query, top_k=1):
     tokens = model.to_tokens(query)
 
-    # Configure visualization
     config = SaeVisConfig(
-        hook_point=sae.cfg.hook_name,
+        hook_point='blocks.8.hook_resid_pre',
         features=list(range(256)), 
         minibatch_size_features=64,
         minibatch_size_tokens=256,

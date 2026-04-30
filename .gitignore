@@ -11,6 +11,7 @@ venv/
 env/
 .venv/
 ENV/
+env_sae_new/
 
 # Environment Variables 
 .env

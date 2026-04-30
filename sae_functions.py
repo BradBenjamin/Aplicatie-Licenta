@@ -1,5 +1,10 @@
 import torch
-
+from sae_lens import SAE
+from transformer_lens import HookedTransformer
+from sae_dashboard.sae_vis_data import SaeVisConfig
+from sae_dashboard.sae_vis_runner import SaeVisRunner
+import os
+from sae_dashboard.data_writing_fns import save_feature_centric_vis
 
 def analyze_query_activations(model, sae, query, top_k=1): #Currently prints top k activations for every token in order
     
@@ -22,7 +27,9 @@ def analyze_query_activations(model, sae, query, top_k=1): #Currently prints top
 def analyze_query_activations_html(model, sae, query, top_k=1):
     tokens = model.to_tokens(query)
     _, cache = model.run_with_cache_with_saes(tokens, saes=[sae])
-    sae_acts = cache["blocks.12.hook_resid_post.hook_sae_acts_post"][0]
+    # TODO TEMPORARY DEBUG PRINT
+    print("Available Cache Keys:", cache.keys())
+    sae_acts = cache["blocks.8.hook_resid_pre.hook_sae_acts_post"][0]
     base_url = "https://www.neuronpedia.org/gemma-2-2b/12-gemmascope-res-16k"
     
     html = "<div style='font-family: monospace; font-size: 14px;'>"
@@ -41,3 +48,30 @@ def analyze_query_activations_html(model, sae, query, top_k=1):
                     </div>"""
     html += "</div>"
     return html
+
+def sae_dashboard_analysis(model, sae, query, top_k=1):
+    tokens = model.to_tokens(query)
+
+    # Configure visualization
+    config = SaeVisConfig(
+        hook_point=sae.cfg.hook_name,
+        features=list(range(256)), 
+        minibatch_size_features=64,
+        minibatch_size_tokens=256,
+        device="cuda",
+        dtype="bfloat16"
+    )
+    
+    # Generate data
+    data = SaeVisRunner(config).run(encoder=sae, model=model, tokens=tokens)
+
+    # Save feature-centric visualization to a temporary local file
+    filename = "feature_dashboard.html"
+    save_feature_centric_vis(sae_vis_data=data, filename=filename)
+
+    # Read the generated HTML file into a string
+    with open(filename, "r", encoding="utf-8") as f:
+        html_content = f.read()
+
+    os.remove(filename)
+    return html_content

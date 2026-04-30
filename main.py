@@ -2,8 +2,8 @@
 #%% Cell 1 - HuggingFaceAuth & Model loading (~ 25 sec)
 from load_model import load_model
 MODEL_NAME = "google/gemma-2-2b-it"
-SAE_RELEASE = "gemma-scope-2b-pt-res-canonical"
-SAE_ID = "layer_12/width_16k/canonical"
+SAE_RELEASE = "beniaminbrad/orange_goblin_gemma"
+SAE_ID = "folder"
 DEVICE = "cuda"
 
 sae_model, sae = load_model(MODEL_NAME, SAE_RELEASE, SAE_ID, DEVICE) #Load the model and the SAE
@@ -12,7 +12,7 @@ sae_model, sae = load_model(MODEL_NAME, SAE_RELEASE, SAE_ID, DEVICE) #Load the m
 
 #%% Cell 2 - Chat loop (~ )
 from chat_functions import generate_sae_response
-from sae_functions import analyze_query_activations_html
+from sae_functions import analyze_query_activations_html, sae_dashboard_analysis
 import gradio as gr
 gr.close_all()
 
@@ -24,7 +24,7 @@ IS_SAE = True
 TOP_K_ACTIVATIONS = 1 #How many activations to study
 
 def gradio_response(message, history):
-    html = analyze_query_activations_html(sae_model, sae, message, TOP_K_ACTIVATIONS) if IS_SAE else ""
+    html =sae_dashboard_analysis(sae_model, sae, message, top_k=TOP_K_ACTIVATIONS) if IS_SAE else "<div style='font-family: monospace; font-size: 14px;'>SAE analysis disabled.</div>"
     if len(history) == 0:
         first_message = f"{SYSTEM_PROMPT}\n\n{message}"
         messages = [{"role": "user", "content": first_message}]

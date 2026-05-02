@@ -30,6 +30,8 @@ def load_model(model_name, sae_release, sae_id, device = "cuda"):
         sae_id=sae_id,
         device=device
     )
+    
+    setattr(sae, 'fold_W_dec_norm', lambda: None) 
     print(f"Loaded model: {model_name}")
     print(f"Loaded SAE: {sae_id} from release {sae_release}")
     return sae_model, sae

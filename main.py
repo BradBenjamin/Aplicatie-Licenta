@@ -1,19 +1,23 @@
 
-#%% Cell 1 - HuggingFaceAuth & Model loading (~ 25 sec)
+#%% Cell 1 - HuggingFaceAuth & Model loading (cuda: ~ 25 sec. cpu: )
 from load_model import load_model
+import torch
 MODEL_NAME = "google/gemma-2-2b-it"
 SAE_RELEASE = "beniaminbrad/orange_goblin_gemma"
 SAE_ID = "folder"
-DEVICE = "cuda"
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 sae_model, sae = load_model(MODEL_NAME, SAE_RELEASE, SAE_ID, DEVICE) #Load the model and the SAE
 #%%
 
 
 #%% Cell 2 - Chat loop (~ )
+
+import sys
 from chat_functions import generate_sae_response
-from sae_functions import analyze_query_activations_html, sae_dashboard_analysis
+from sae_functions import analyze_query_activations_html, sae_dashboard_analysis_2
 import gradio as gr
+print(sys.executable) # Check if env is correct
 gr.close_all()
 
 
@@ -21,10 +25,10 @@ NUM_TOKENS=256
 TEMP=0.7
 SYSTEM_PROMPT = "You are an honest and helpful AI Assistant"
 IS_SAE = True
-TOP_K_ACTIVATIONS = 1 #How many activations to study
+TOP_K_ACTIVATIONS = 10 #How many activations to study
 
 def gradio_response(message, history):
-    html =sae_dashboard_analysis(sae_model, sae, message, top_k=TOP_K_ACTIVATIONS) if IS_SAE else "<div style='font-family: monospace; font-size: 14px;'>SAE analysis disabled.</div>"
+    html =sae_dashboard_analysis_2(sae_model, sae, message,device=DEVICE, top_k=TOP_K_ACTIVATIONS) if IS_SAE else "<div style='font-family: monospace; font-size: 14px;'>SAE analysis disabled.</div>"
     if len(history) == 0:
         first_message = f"{SYSTEM_PROMPT}\n\n{message}"
         messages = [{"role": "user", "content": first_message}]

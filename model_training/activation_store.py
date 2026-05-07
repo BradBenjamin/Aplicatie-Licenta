@@ -51,16 +51,17 @@ class ActivationsStore:
                 names_filter=[self.hook_point],
                 stop_at_layer=self.cfg["layer"] +1,
             )
-        activations = cache[self.hook_point]  #MODIFIED FOR <BOS>
-        clean_activations = activations[:, 1:, :] #same
-        return clean_activations
+        return cache[self.hook_point]
 
     def _fill_buffer(self):
         all_activations = []
         for _ in range(self.num_batches_in_buffer):
             batch_tokens = self.get_batch_tokens()
-            activations = self.get_activations(batch_tokens).reshape(-1, self.cfg["act_size"])
-            all_activations.append(activations)
+            activations = self.get_activations(batch_tokens)
+            clean_activations = activations[:, 1:, :] #CLEAN ACTIVATIONS switched
+            flat_activations = clean_activations.reshape(-1, self.cfg["act_size"]) #(added)
+
+            all_activations.append(flat_activations)
         return torch.cat(all_activations, dim=0)
 
     def _get_dataloader(self):

@@ -1,0 +1,5 @@
+1. Dump sae.pt and config.json from checkpoints into huggingface_upload
+
+2. Modify GOBLIN_COLOR in huggingface_upload.py
+
+3. Run: python huggingface_upload.py

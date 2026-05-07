@@ -71,6 +71,7 @@ comanda_pentru_pornire_env
 # Ignore PyTorch model weights
 *.pt
 *.pth
+*.safetensors
 
 # Ignore Weights & Biases auto-generated files
 wandb/

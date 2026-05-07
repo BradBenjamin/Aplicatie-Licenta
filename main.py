@@ -3,10 +3,10 @@
 from load_model import load_model
 import torch
 MODEL_NAME = "google/gemma-2-2b-it"
-SAE_RELEASE = "beniaminbrad/orange_goblin_gemma"
+SAE_RELEASE = "beniaminbrad/yellow_goblin_gemma"
 SAE_ID = "folder"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
+print(f"Using device: {DEVICE}")
 sae_model, sae = load_model(MODEL_NAME, SAE_RELEASE, SAE_ID, DEVICE) #Load the model and the SAE
 #%%
 

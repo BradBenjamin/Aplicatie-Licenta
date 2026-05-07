@@ -6,6 +6,7 @@ __pycache__/
 # C extensions
 *.so
 
+
 # Virtual Environments
 venv/
 env/
@@ -58,3 +59,24 @@ coverage.xml
 Thumbs.db
 
 comanda_pentru_pornire_env
+
+#Altele
+.yaml
+.json
+.wandb
+
+# Ignore all log files
+*.log
+
+# Ignore PyTorch model weights
+*.pt
+*.pth
+
+# Ignore Weights & Biases auto-generated files
+wandb/
+model_training/wandb/
+
+# Ignore model checkpoints
+checkpoints/
+model_training/checkpoints/
+model_training/wandb/

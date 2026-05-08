@@ -20,7 +20,6 @@ import gradio as gr
 print(sys.executable) # Check if env is correct
 gr.close_all()
 
-
 NUM_TOKENS=256
 TEMP=0.7
 SYSTEM_PROMPT = "You are an honest and helpful AI Assistant"

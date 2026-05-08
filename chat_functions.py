@@ -13,7 +13,11 @@ def tokenize_messages(model, tokenizer, messages):
       tokenize=False,
       add_generation_prompt=True
   )
-  tokenized_messages = tokenizer([text], return_tensors="pt").to(model.device)
+  tokenized_messages = tokenizer(
+        [text], 
+        return_tensors="pt",
+        add_special_tokens=False 
+    ).to(model.device)
   return tokenized_messages
 def generate_normal_response(model, tokenizer,messages, num_tokens, temp):
   print("Generating response...\n")
@@ -39,7 +43,7 @@ def generate_sae_response(model,messages, num_tokens, temp):
         tokenize=False,
         add_generation_prompt=True
     )
-  input_ids = tokenizer.encode(text, return_tensors="pt").to(model.cfg.device)
+  input_ids = tokenizer.encode(text, return_tensors="pt", add_special_tokens=False).to(model.cfg.device)
   generated_ids = model.generate(
         input_ids,
         max_new_tokens=num_tokens,

@@ -55,15 +55,23 @@ class ActivationsStore:
 
     def _fill_buffer(self):
         all_activations = []
+        bos_token_id = self.tokenizer.bos_token_id
+
         for _ in range(self.num_batches_in_buffer):
             batch_tokens = self.get_batch_tokens()
             activations = self.get_activations(batch_tokens)
-            clean_activations = activations[:, 1:, :] #CLEAN ACTIVATIONS switched
-            flat_activations = clean_activations.reshape(-1, self.cfg["act_size"]) #(added)
+            
+            # 1. Create a mask of all tokens that are NOT <bos>
+            # Shape: (batch_size, context_size)
+            valid_tokens_mask = batch_tokens != bos_token_id
 
-            all_activations.append(flat_activations)
+            # 2. Use the mask to select only valid activations.
+            # PyTorch automatically flattens the result to shape (N_valid_tokens, act_size)
+            clean_activations = activations[valid_tokens_mask]
+
+            all_activations.append(clean_activations)
+            
         return torch.cat(all_activations, dim=0)
-
     def _get_dataloader(self):
         return DataLoader(TensorDataset(self.activation_buffer), batch_size=self.cfg["batch_size"], shuffle=True)
 

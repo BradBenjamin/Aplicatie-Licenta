@@ -1,10 +1,12 @@
 import torch
 import tqdm
 from logs import init_wandb, log_wandb, log_model_performance, save_checkpoint
+from transformers import get_cosine_schedule_with_warmup
 
-def train_sae(sae, activation_store, model, cfg):
+def train_sae(sae, activation_store, model, cfg, warmup_steps):
     num_batches = cfg["num_tokens"] // cfg["batch_size"]
     optimizer = torch.optim.Adam(sae.parameters(), lr=cfg["lr"], betas=(cfg["beta1"], cfg["beta2"]))
+    scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps, num_training_steps=num_batches)
     pbar = tqdm.trange(num_batches)
     wandb_run = init_wandb(cfg)
     
@@ -24,6 +26,7 @@ def train_sae(sae, activation_store, model, cfg):
         torch.nn.utils.clip_grad_norm_(sae.parameters(), cfg["max_grad_norm"])
         sae.make_decoder_weights_and_grad_unit_norm()
         optimizer.step()
+        scheduler.step()
         optimizer.zero_grad()
 
     save_checkpoint(wandb_run, sae, cfg, i)

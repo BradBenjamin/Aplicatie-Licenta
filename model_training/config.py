@@ -31,7 +31,7 @@ def get_default_cfg():
 
         # (Batch)TopKSAE specific
         "top_k": 32,
-        "top_k_aux": 512,
+        "top_k_aux": 128,
         "aux_penalty": (1/32),
         # for jumprelu
         "bandwidth": 0.001,

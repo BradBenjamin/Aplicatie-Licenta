@@ -81,3 +81,5 @@ model_training/wandb/
 checkpoints/
 model_training/checkpoints/
 model_training/wandb/
+
+*/huggingface/

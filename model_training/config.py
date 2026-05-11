@@ -4,7 +4,7 @@ import torch
 def get_default_cfg():
     default_cfg = {
         "seed": 49,
-        "batch_size": 2048,  # Initial: 4096, for testing: 1024
+        "batch_size": 4096,  # Initial: 4096, for testing: 1024
         "lr": 3e-4,
         "num_tokens": int(1e9), # Initial: int(1e9), for testing: 1000000
         "l1_coeff": 0,
@@ -17,11 +17,11 @@ def get_default_cfg():
         "site": "resid_pre",
         "layer": 8,
         "act_size": 2304,
-        "dict_size": 2304 * 7,
-        "device": "cpu",
-        "model_batch_size": 48, # Initial: 512, for testing: 16
-        "num_batches_in_buffer": 30, 
-        "dataset_path": "Skylion007/openwebtext", # original:  Skylion007/openwebtext
+        "dict_size": 2304 * 16, # *16 - BIG run (billion tokens)
+        "device": "cuda" if torch.cuda.is_available() else "cpu",
+        "model_batch_size": 48, 
+        "num_batches_in_buffer": 64, 
+        "dataset_path": "HuggingFaceFW/fineweb-edu", # original:  Skylion007/openwebtext
         "wandb_project": "sparse_autoencoders",
         "input_unit_norm": True,
         "perf_log_freq": 1000,

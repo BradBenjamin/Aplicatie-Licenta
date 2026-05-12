@@ -91,16 +91,13 @@ def sae_dashboard_analysis_2(model, sae, query, device, top_k=3):
     hidden_states = cache[hook_name] 
 
     # 3. Pass the cached activations through the SAE to get feature activations
-    # feature_acts shape: [batch_size, seq_len, d_sae]
     with torch.no_grad():
         feature_acts = sae.encode(hidden_states)
     
     # Squeeze out the batch dimension AND slice off the <bos> token at index 0
-    # Now shape is: [seq_len - 1, d_sae]
     feature_acts = feature_acts.squeeze(0)[1:]
 
     # 4. Find the features that fired the hardest across this specific prompt
-    # Get the maximum activation value for each feature across all remaining tokens
     max_acts_per_feature, _ = feature_acts.max(dim=0)
     
     # Get the indices of the top_k features
@@ -113,14 +110,13 @@ def sae_dashboard_analysis_2(model, sae, query, device, top_k=3):
         feature_idx = feature_idx.item()
         max_val = max_val.item()
         
-        # If the max activation is 0, none of the top features fired (dead prompt)
         if max_val == 0:
             continue
 
         html_content += f"<div style='margin-top: 15px; color: #ddd;'><b>Feature #{feature_idx}</b> (Absolute Max Act: {max_val:.2f})</div>"
         
-        # Added color: #000; to force text visibility. Added monospace font for neat alignment.
-        html_content += "<div style='line-height: 2.5em; padding: 15px; background: #f9f9f9; color: #000; border-radius: 5px; border: 1px solid #ddd; font-family: monospace; font-size: 14px; margin-top: 5px;'>"
+        # [FIX 1]: Added word-wrap: break-word to ensure the container itself allows wrapping
+        html_content += "<div style='line-height: 2.2em; padding: 15px; background: #f9f9f9; color: #000; border-radius: 5px; border: 1px solid #ddd; font-family: monospace; font-size: 14px; margin-top: 5px; word-wrap: break-word;'>"
         
         # Get the activations for THIS specific feature across all remaining tokens
         this_feature_acts = feature_acts[:, feature_idx]
@@ -129,80 +125,22 @@ def sae_dashboard_analysis_2(model, sae, query, device, top_k=3):
         for token, act in zip(str_tokens, this_feature_acts):
             val = act.item()
             
-            # Normalize the alpha (opacity) based on the max (no need for the old <bos> workaround!)
             alpha = val / max_val if max_val > 0 else 0
             alpha = min(1.0, alpha) 
             
-            # Use an orange color (rgb 255, 150, 0) for the highlight
             color = f"rgba(255, 150, 0, {alpha})"
             
-            # Clean up tokens & ensure pure whitespace tokens render a background block
-            clean_token = token.replace(' ', '&nbsp;').replace('<bos>', '&lt;bos&gt;')
-            if not clean_token.strip() and '&nbsp;' not in clean_token:
+            # [FIX 2]: Added a replacement for '\n' so multi-line prompts don't break the formatting
+            clean_token = token.replace(' ', '&nbsp;').replace('<bos>', '&lt;bos&gt;').replace('\n', '↵')
+            if not clean_token.strip() and '&nbsp;' not in clean_token and '↵' not in clean_token:
                 clean_token = "&nbsp;" * max(1, len(clean_token))
             
-            # Add the highlighted token to the HTML string
-            html_content += f"<span style='background-color: {color}; padding: 2px 0px; border-radius: 2px; margin: 0 1px;'>{clean_token}</span>"
+            # [FIX 3]: Added `display: inline-block;` and vertical margin (`margin: 2px 1px;`)
+            html_content += f"<span style='display: inline-block; background-color: {color}; padding: 2px 0px; border-radius: 2px; margin: 2px 1px;'>{clean_token}</span>"
             
         html_content += "</div>"
 
     if html_content.endswith("</h3>"):
         html_content += "<div style='color: #888;'>No features activated for this prompt.</div>"
 
-    return html_content
-
-import torch
-
-def color_code_prompt_activations(model, sae, query, device):
-    """
-    Runs the query through the model and SAE, and returns an HTML string 
-    where each token is highlighted based on its highest feature activation.
-    """
-    # 1. Convert the input query to tokens and string tokens
-    tokens = model.to_tokens(query).to(device)
-    
-    # Slice off the <bos> token (index 0) for display
-    str_tokens = model.to_str_tokens(query)[1:] 
-
-    # 2. Get the hidden states from the specific layer
-    hook_name = 'blocks.8.hook_resid_pre'
-    _, cache = model.run_with_cache(tokens, names_filter=[hook_name])
-    hidden_states = cache[hook_name] 
-
-    # 3. Pass the cached activations through the SAE to get feature activations
-    with torch.no_grad():
-        feature_acts = sae.encode(hidden_states)
-    
-    # Squeeze out the batch dimension AND slice off the <bos> token at index 0
-    # Now shape is: [seq_len - 1, d_sae]
-    feature_acts = feature_acts.squeeze(0)[1:]
-
-    # 4. Find the max activation for EACH token across ALL features
-    # token_max_acts shape: [seq_len - 1]
-    token_max_acts, _ = feature_acts.max(dim=1)
-    
-    # Find the absolute highest activation in the entire prompt to normalize the colors
-    overall_max = token_max_acts.max().item()
-
-    # 5. Build the HTML output
-    html_content = ""
-
-    for token, act in zip(str_tokens, token_max_acts):
-        val = act.item()
-        
-        # Normalize the alpha (opacity) based on the overall max
-        alpha = val / overall_max if overall_max > 0 else 0
-        alpha = min(1.0, alpha) 
-        
-        # Using a bright yellow/orange for the inline chat highlights
-        color = f"rgba(255, 204, 0, {alpha})"
-        
-        # Clean up tokens & ensure pure whitespace tokens render a background block
-        clean_token = token.replace(' ', '&nbsp;').replace('<bos>', '&lt;bos&gt;').replace('<n>', '<br>')
-        if not clean_token.strip() and '&nbsp;' not in clean_token and '<br>' not in clean_token:
-            clean_token = "&nbsp;" * max(1, len(clean_token))
-        
-        # Add the highlighted token to the HTML string
-        html_content += f"<span style='background-color: {color}; padding: 2px 0px; border-radius: 2px; margin: 0 1px;'>{clean_token}</span>"
-        
     return html_content

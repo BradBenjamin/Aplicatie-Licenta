@@ -1,8 +1,0 @@
-Posibile imbunatatiri:
-
-Timp:
-Double Buffering (Advanced): The only way to eliminate the pause entirely is to rewrite
- your ActivationsStore to use asynchronous background threads (saving activations to the
-  CPU or a disk while the GPU trains).  
-
-Discutie despre config

@@ -4,7 +4,7 @@ import torch
 from safetensors.torch import save_file
 api = HfApi()
 
-GOBLIN_COLOR = "yellow"
+GOBLIN_COLOR = "purple"
 
 def convert_pt_to_safetensors():
     folder_path = f"{GOBLIN_COLOR}_goblin"

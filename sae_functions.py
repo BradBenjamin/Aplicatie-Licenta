@@ -76,17 +76,18 @@ def sae_dashboard_analysis(model, sae, query, device, top_k=1, ):
     return html_content
 
 import torch
+
 def sae_dashboard_analysis_2(model, sae, query, device, top_k=3):
+    print("Updated sae_dashboard_analysis_2 called with query:", query)
     # 1. Convert the input query to tokens and string tokens (for display)
     tokens = model.to_tokens(query).to(device)
-    str_tokens = model.to_str_tokens(query)
+    
+    # Slice off the <bos> token (index 0) for display
+    str_tokens = model.to_str_tokens(query)[1:] 
 
-    # 2. Run the model and grab the activations at the specific hook point
-    # Use the hook name from your SAE config
     hook_name = 'blocks.8.hook_resid_pre'
     _, cache = model.run_with_cache(tokens, names_filter=[hook_name])
-    
-    # hidden_states shape: [batch_size, seq_len, d_model]
+
     hidden_states = cache[hook_name] 
 
     # 3. Pass the cached activations through the SAE to get feature activations
@@ -94,11 +95,12 @@ def sae_dashboard_analysis_2(model, sae, query, device, top_k=3):
     with torch.no_grad():
         feature_acts = sae.encode(hidden_states)
     
-    # Squeeze out the batch dimension so we just have [seq_len, d_sae]
-    feature_acts = feature_acts.squeeze(0)
+    # Squeeze out the batch dimension AND slice off the <bos> token at index 0
+    # Now shape is: [seq_len - 1, d_sae]
+    feature_acts = feature_acts.squeeze(0)[1:]
 
     # 4. Find the features that fired the hardest across this specific prompt
-    # Get the maximum activation value for each feature across all tokens
+    # Get the maximum activation value for each feature across all remaining tokens
     max_acts_per_feature, _ = feature_acts.max(dim=0)
     
     # Get the indices of the top_k features
@@ -117,37 +119,26 @@ def sae_dashboard_analysis_2(model, sae, query, device, top_k=3):
 
         html_content += f"<div style='margin-top: 15px; color: #ddd;'><b>Feature #{feature_idx}</b> (Absolute Max Act: {max_val:.2f})</div>"
         
-        # FIX 1: Added color: #000; to force text visibility. Added monospace font for neat alignment.
+        # Added color: #000; to force text visibility. Added monospace font for neat alignment.
         html_content += "<div style='line-height: 2.5em; padding: 15px; background: #f9f9f9; color: #000; border-radius: 5px; border: 1px solid #ddd; font-family: monospace; font-size: 14px; margin-top: 5px;'>"
         
-        # Get the activations for THIS specific feature across all tokens
+        # Get the activations for THIS specific feature across all remaining tokens
         this_feature_acts = feature_acts[:, feature_idx]
-        
-        # FIX 2: Calculate max activation ignoring the <bos> token (index 0) 
-        # so the rest of the sentence isn't washed out
-        if len(this_feature_acts) > 1:
-            max_val_for_color = this_feature_acts[1:].max().item()
-            # If the rest of the sequence is dead, fallback to absolute max
-            if max_val_for_color == 0: 
-                max_val_for_color = max_val
-        else:
-            max_val_for_color = max_val
 
         # Build the heatmap for this feature
         for token, act in zip(str_tokens, this_feature_acts):
             val = act.item()
             
-            # Normalize the alpha (opacity) based on the adjusted max
-            alpha = val / max_val_for_color if max_val_for_color > 0 else 0
-            # Cap at 1.0 just in case the BOS token is the one being rendered
+            # Normalize the alpha (opacity) based on the max (no need for the old <bos> workaround!)
+            alpha = val / max_val if max_val > 0 else 0
             alpha = min(1.0, alpha) 
             
             # Use an orange color (rgb 255, 150, 0) for the highlight
             color = f"rgba(255, 150, 0, {alpha})"
             
-            # FIX 3: Clean up Gemma tokens & ensure pure whitespace tokens render a background block
-            clean_token = token.replace(' ', ' ').replace('<bos>', '&lt;bos&gt;')
-            if not clean_token.strip():
+            # Clean up tokens & ensure pure whitespace tokens render a background block
+            clean_token = token.replace(' ', '&nbsp;').replace('<bos>', '&lt;bos&gt;')
+            if not clean_token.strip() and '&nbsp;' not in clean_token:
                 clean_token = "&nbsp;" * max(1, len(clean_token))
             
             # Add the highlighted token to the HTML string

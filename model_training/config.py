@@ -3,6 +3,7 @@ import torch
 
 def get_default_cfg():
     default_cfg = {
+        "sae_type": "batchtopk", 
         "seed": 49,
         "batch_size": 4096,  # Initial: 4096, for testing: 1024
         "lr": 3e-4,

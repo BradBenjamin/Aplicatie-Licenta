@@ -24,9 +24,12 @@ cfg["input_unit_norm"] = True
 cfg["top_k"] = 32
 cfg['wandb_project'] = 'batchtopk_comparison'
 cfg['act_size'] = 2304
+cfg['device'] = "cuda" if torch.cuda.is_available() else "cpu"
 cfg['bandwidth'] = 0.001
 cfg['l1_coeff'] = l1_coeff
 cfg['num_tokens'] = num_tokens
+
+
 
 
 if cfg["sae_type"] == "vanilla":

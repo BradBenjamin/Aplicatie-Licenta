@@ -20,9 +20,9 @@ def get_default_cfg():
         "act_size": 2304,
         "dict_size": 2304 * 16, # *16 - BIG run (billion tokens)
         "device": "cuda" if torch.cuda.is_available() else "cpu",
-        "model_batch_size": 48, 
-        "num_batches_in_buffer": 64, 
-        "dataset_path": "HuggingFaceFW/fineweb-edu", # original:  Skylion007/openwebtext
+        "model_batch_size": 64, 
+        "num_batches_in_buffer": 128, 
+        "dataset_path": "Skylion007/openwebtext", # original:  Skylion007/openwebtext
         "wandb_project": "sparse_autoencoders",
         "input_unit_norm": True,
         "perf_log_freq": 1000,

@@ -150,3 +150,59 @@ def sae_dashboard_analysis_2(model, sae, query, device, top_k=3):
         html_content += "<div style='color: #888;'>No features activated for this prompt.</div>"
 
     return html_content
+
+import torch
+
+def color_code_prompt_activations(model, sae, query, device):
+    """
+    Runs the query through the model and SAE, and returns an HTML string 
+    where each token is highlighted based on its highest feature activation.
+    """
+    # 1. Convert the input query to tokens and string tokens
+    tokens = model.to_tokens(query).to(device)
+    
+    # Slice off the <bos> token (index 0) for display
+    str_tokens = model.to_str_tokens(query)[1:] 
+
+    # 2. Get the hidden states from the specific layer
+    hook_name = 'blocks.8.hook_resid_pre'
+    _, cache = model.run_with_cache(tokens, names_filter=[hook_name])
+    hidden_states = cache[hook_name] 
+
+    # 3. Pass the cached activations through the SAE to get feature activations
+    with torch.no_grad():
+        feature_acts = sae.encode(hidden_states)
+    
+    # Squeeze out the batch dimension AND slice off the <bos> token at index 0
+    # Now shape is: [seq_len - 1, d_sae]
+    feature_acts = feature_acts.squeeze(0)[1:]
+
+    # 4. Find the max activation for EACH token across ALL features
+    # token_max_acts shape: [seq_len - 1]
+    token_max_acts, _ = feature_acts.max(dim=1)
+    
+    # Find the absolute highest activation in the entire prompt to normalize the colors
+    overall_max = token_max_acts.max().item()
+
+    # 5. Build the HTML output
+    html_content = ""
+
+    for token, act in zip(str_tokens, token_max_acts):
+        val = act.item()
+        
+        # Normalize the alpha (opacity) based on the overall max
+        alpha = val / overall_max if overall_max > 0 else 0
+        alpha = min(1.0, alpha) 
+        
+        # Using a bright yellow/orange for the inline chat highlights
+        color = f"rgba(255, 204, 0, {alpha})"
+        
+        # Clean up tokens & ensure pure whitespace tokens render a background block
+        clean_token = token.replace(' ', '&nbsp;').replace('<bos>', '&lt;bos&gt;').replace('<n>', '<br>')
+        if not clean_token.strip() and '&nbsp;' not in clean_token and '<br>' not in clean_token:
+            clean_token = "&nbsp;" * max(1, len(clean_token))
+        
+        # Add the highlighted token to the HTML string
+        html_content += f"<span style='background-color: {color}; padding: 2px 0px; border-radius: 2px; margin: 0 1px;'>{clean_token}</span>"
+        
+    return html_content

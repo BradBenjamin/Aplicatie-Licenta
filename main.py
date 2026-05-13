@@ -15,7 +15,7 @@ sae_model, sae = load_model(MODEL_NAME, SAE_RELEASE, SAE_ID, DEVICE) #Load the m
 
 import sys
 from chat_functions import generate_sae_response
-from sae_functions import analyze_query_activations_html, sae_dashboard_analysis_2
+from sae_functions import  sae_dashboard_analysis_2, generate_feature_titles
 import gradio as gr
 print(sys.executable) # Check if env is correct
 gr.close_all()
@@ -26,8 +26,9 @@ SYSTEM_PROMPT = "You are an honest and helpful AI Assistant"
 IS_SAE = True
 TOP_K_ACTIVATIONS = 10 #How many activations to study
 
+feature_titles =generate_feature_titles(sae_model, sae, DEVICE) # Precompute feature titles for the dashboard (takes a few minutes, but we only need to do it once per SAE/model combo)
 def gradio_response(message, history):
-    html =sae_dashboard_analysis_2(sae_model, sae, message,device=DEVICE, top_k=TOP_K_ACTIVATIONS) if IS_SAE else "<div style='font-family: monospace; font-size: 14px;'>SAE analysis disabled.</div>"
+    html =sae_dashboard_analysis_2(sae_model, sae, message,device=DEVICE,feature_title_dict=feature_titles, top_k=TOP_K_ACTIVATIONS) if IS_SAE else "<div style='font-family: monospace; font-size: 14px;'>SAE analysis disabled.</div>"
     if len(history) == 0:
         first_message = f"{SYSTEM_PROMPT}\n\n{message}"
         messages = [{"role": "user", "content": first_message}]
@@ -38,7 +39,7 @@ def gradio_response(message, history):
     history.append({"role": "assistant", "content": response})
     return history, html
 
-with gr.Blocks(title="Gemma-2-2b-it Chat") as demo:
+with gr.Blocks(title="Gemma Chat") as demo:
     with gr.Row():
         # --- LEFT COLUMN: Chat and Input ---
         with gr.Column(scale=1):
@@ -52,5 +53,11 @@ with gr.Blocks(title="Gemma-2-2b-it Chat") as demo:
     # Bind the submit event down here, AFTER all components are defined
     msg.submit(gradio_response, [msg, chatbot], [chatbot, activation_display])
 
-demo.launch() #run interface
+demo.launch(
+    server_name="127.0.0.1", 
+    server_port=7860,        # Force 7860. If it's busy, Gradio will CRASH instead of silently hopping.
+    inline=False,            # BAN Gradio from trying to render inside the VS Code Interactive Window.
+    inbrowser=False,
+    share=False
+)
 #%%
